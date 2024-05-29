@@ -13,7 +13,7 @@ namespace snake{
         // 게임 창을 stageNum 번째 stage로 초기화
         board.initialize(stageNum);
 
-        // snake queue를 게임 창 좌측 상단에 ###@ 형태로 초기화
+        // snake queue를 게임 창 좌측 상단에 ###% 형태로 초기화
         snake.initialize();
 
         // 게임 창에 메모리 상으로 초기화 된 snake 위치 표시한다
@@ -124,7 +124,7 @@ namespace snake{
 
             // snake에다가 next 추가
             snake.addBody(next);
-            // next를 추가한 최종 snake의 머리 부분의 icon을 '@'로 설정
+            // next를 추가한 최종 snake의 머리 부분의 icon을 '%'로 설정
             snake.head().setIcon('%');
             // 게임 창에도 똑같이 반영
             board.add(snake.head().getY(), snake.head().getX(), '%');
