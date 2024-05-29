@@ -1,4 +1,6 @@
 #include "snake_game.hpp"
+#include <chrono>
+#include <thread>
 
 namespace snake{
     // 생성자 호출 시 게임 창을 stage 0번으로 초기화
@@ -12,6 +14,10 @@ namespace snake{
     {
         delete apple;
         delete bomb;
+        delete warp1;
+        delete warp2;
+        delete tmp_next;
+        delete strawberry;
     }
 
     // 게임 시작할 시(= 생성자 호출 될 시) 진행하는 로직
@@ -19,6 +25,12 @@ namespace snake{
     {
         // 게임 창을 stageNum 번째 stage로 초기화
         board.initialize(stageNum);
+
+        // missionboard 
+        missionboard.init();
+
+        // 초기화될 때마다 rand 시드 바꾼다
+        srand(time(NULL));
 
         // snake queue를 게임 창 좌측 상단에 ###@ 형태로 초기화
         snake.initialize();
@@ -32,8 +44,14 @@ namespace snake{
         // 사과랑 폭탄 만든다
         createApple();
         createBomb();
-        // createWarp1();
-        // createWarp2();
+        createWarp();
+        tmp_next=NULL;
+        createStrawberry();
+
+        // 게임 초기화시 다시 카운터 해야하는 변수 초기화
+        apple_counter=0;
+        bomb_counter=0;
+        warp_counter=0;
     }
 
     // 사과 만드는 함수
@@ -62,6 +80,32 @@ namespace snake{
 
         // 게임 창의 메모리 상으로 사과 B 추가
         board.add(y, x, 'B');
+    }
+
+    void SnakeGame::createWarp()
+    {
+        int y, x;
+        board. getWarpPos(y,x);
+        warp1=new Warp(y,x);
+        board.add(y, x, '$');
+
+        board. getWarpPos(y,x);
+        warp2=new Warp(y,x);
+        board.add(y, x, '$');
+    }
+
+    // 딸기(= speedUP) 만드는 함수
+    void SnakeGame::createStrawberry()
+    {
+        int y, x;
+
+        // 아이템이 생성될 수 있는 위치 get하기
+        board.getItemPos(y, x);
+
+        strawberry = new Strawberry(y, x);
+
+        // 게임 창의 메모리 상으로 딸기 추가
+        board.add(y, x, 'S');
     }
 
     // 입력 받은 값에 따라 작동을 달리하는 로직
@@ -126,8 +170,27 @@ namespace snake{
         // next는 snake가 다음 어디로 가야할지 그 위치의 값을 가진 SnakePiece이다
         SnakePiece next = snake.nexthead();
 
-        // next 라는 SnakePiece를 가지고 뱀을 조종
-        handleNext(next);
+        if(board.getCharAt(next.getY(), next.getX())== '$')
+        {
+            warp_counter++;
+            missionboard.drawGateway_mission(get_warp_Counter());
+
+            if((next.getY()==warp1->getY()) && (next.getX()==warp1->getX())){
+                //check 4 direction of warp2
+                //UP, DOWN, RIGHT, LEFT
+                checkWarp(next, warp2);
+            }
+            else if((next.getY()==warp2->getY()) && (next.getX()==warp2->getX())){
+                checkWarp(next, warp1);
+            }
+            handleNext(next);
+        }
+        else
+            // next 라는 SnakePiece를 가지고 뱀을 조종
+            handleNext(next);
+
+        if((tmp_next!=NULL)&&(board.getCharAt(tmp_next->getY(), tmp_next->getX()) !='#')&& (board.getCharAt(tmp_next->getY(), tmp_next->getX()) !='%'))
+            endWarp();
 
         // 만약 사과나 폭탄이 NULL 상태라면 생성해야 한다
         if (apple == NULL)
@@ -140,6 +203,16 @@ namespace snake{
             createBomb();
         }
 
+        if(warp1==NULL && warp2==NULL)
+        {
+            createWarp();
+        }
+
+        if (strawberry == NULL)
+        {
+            createStrawberry();
+        }
+
         // 만약 snake의 몸 길이가 3 미만이라면 게임 오버로 간주
         if (snake.getSize() < 3)
         {
@@ -148,10 +221,13 @@ namespace snake{
     }
 
     // 뱀이 다음 위치로 어떻게 나아가야하는지 icon에 따라 조종하는 함수
-    void SnakeGame::handleNext(SnakePiece next)
+    void SnakeGame::handleNext(SnakePiece& next)
     {   
         int nextRow = next.getY();
         int nextCol = next.getX();
+
+        // current_body_length
+        missionboard.drawCurrent_mission(snake.getSize()); 
 
         // 만약 다음으로 나아갈 위치가 ' '이라면
         // 이하 "뱀이 앞으로 나아가는 로직" 이라고 칭함
@@ -178,6 +254,9 @@ namespace snake{
         // 사과를 먹는다면
         else if (board.getCharAt(nextRow, nextCol) == 'A')
         {
+            // 미션 보드에 Apple 먹은 횟수 업데이트
+            apple_counter++;
+            missionboard.drawApple_mission(get_apple_Counter()); 
             // 사과 먹는 함수 실행
             eatApple();
 
@@ -193,9 +272,14 @@ namespace snake{
         // 폭탄을 먹는다면
         else if (board.getCharAt(nextRow, nextCol) == 'B')
         {  
+
+            // 미션 보드에 Bomb 먹은 횟수 업데이트
+            bomb_counter++; // 먹으면 bomb(itemp.hpp)카운터 증가
+            missionboard.drawBomb_mission(get_bomb_Counter()); 
+
             // 폭탄을 먹는 함수 실행
             eatBomb();
-
+            
             // 꼬리를 한번 더 삭제하고 앞으로 나아가는 로직 진행
             board.add(snake.tail().getY(), snake.tail().getX(), ' ');
             snake.removeBody();
@@ -211,6 +295,21 @@ namespace snake{
             board.add(snake.head().getY(), snake.head().getX(), '%');
         }
 
+        else if (board.getCharAt(nextRow, nextCol) == 'S')
+        {
+            // 사과 먹는 함수 실행
+            eatStrawberry();
+
+            int tick = board.getSpeedTick();
+
+            if (tick > 50)
+            {
+                tick -= 50;
+            }
+            
+            board.setTimeout(tick);
+        }
+
         // Wall(= '1')을 만났을 때, 뱀 몸통(=자기 자신)을 만났을 때
         else
         {
@@ -221,13 +320,13 @@ namespace snake{
     // 사과를 없애는(=먹는) 함수
     void SnakeGame::eatApple()
     {   
+        
         // 우선 보드에 기존의 사과 위치에다가 ' ' add한다
         board.add(apple->getY(), apple->getX(), ' ');
-
+        
         // 동적할당 했었던 apple 없애고 apple을 NULL로 하자
         delete apple;
         apple = NULL;
-
     }
 
     // 폭탄를 없애는(=먹는) 함수
@@ -239,6 +338,17 @@ namespace snake{
         // 동적할당 했었던 bomb 없애고 bomb을 NULL로 하자
         delete bomb;
         bomb = NULL;
+    }
+
+    // 딸기를 없애는(=먹는) 함수
+    void SnakeGame::eatStrawberry()
+    {   
+        // 우선 보드에 기존의 딸기 위치에다가 ' ' add한다
+        board.add(strawberry->getY(), strawberry->getX(), ' ');
+
+        // 동적할당 했었던 딸기 없애고 딸기를 NULL로 하자
+        delete strawberry;
+        strawberry = NULL;
     }
 
     // stage 번호에 따라서 게임 창을 초기화하는 함수
@@ -288,6 +398,78 @@ namespace snake{
             eatBomb();
             createBomb();
         }
+
+        if (strawberry != NULL) {
+            eatStrawberry();
+            createStrawberry();
+        }
     }
     // ==============================================
+
+    void SnakeGame::endWarp()
+    {
+        board.add(warp1->getY(), warp1->getX(), '1');
+        delete warp1;
+        warp1=NULL;
+
+        board.add(warp2->getY(), warp2->getX(), '1');
+        delete warp2;
+        warp2=NULL;
+
+        delete tmp_next;
+        tmp_next=NULL;
+    }
+
+    void SnakeGame::checkWarp(SnakePiece& next, Warp *warp)
+    {
+        int dy[4]={}, dx[4]={};
+        Direction key[5];
+
+        if (snake.getDirection() == up) {
+            // UP, RIGHT, LEFT, DOWN
+            dx[0] = 0; dy[0] = -1; key[0] = up;
+            dx[1] = 1; dy[1] = 0; key[1] = right;
+            dx[2] = -1; dy[2] = 0; key[2] = left;
+            dx[3] = 0; dy[3] = 1; key[3] = down;
+        } 
+        else if (snake.getDirection() == down) {
+            // DOWN, LEFT, RIGHT, UP
+            dx[0] = 0; dy[0] = 1; key[0] = down;
+            dx[1] = -1; dy[1] = 0; key[1] = left;
+            dx[2] = 1; dy[2] = 0; key[2] = right;
+            dx[3] = 0; dy[3] = -1; key[3] = up;
+        } 
+        else if (snake.getDirection() == right) {
+            // RIGHT, DOWN, UP, LEFT
+            dx[0] = 1; dy[0] = 0; key[0] = right;
+            dx[1] = 0; dy[1] = 1; key[1] = down;
+            dx[2] = 0; dy[2] = -1; key[2] = up;
+            dx[3] = -1; dy[3] = 0; key[3] = left;
+        } 
+        else if (snake.getDirection() == left) {
+            // LEFT, UP, DOWN, RIGHT
+            dx[0] = -1; dy[0] = 0; key[0] = left;
+            dx[1] = 0; dy[1] = -1; key[1] = up;
+            dx[2] = 0; dy[2] = 1; key[2] = down;
+            dx[3] = 1; dy[3] = 0; key[3] = right;
+        }
+
+        for(int i=0; i<4; i++)
+        {
+            int tmp_y= warp->getY()+dy[i];
+            int tmp_x= warp->getX()+dx[i];
+            //out of map
+            if((tmp_y<0)|| (tmp_x<0)|| (tmp_y>20) ||(tmp_x>20))
+                continue;
+            //if(board.stage[board.stageNum][tmp_y][tmp_x]=='$')
+            if(board.getCharAt(tmp_y, tmp_x)=='1' || board.getCharAt(tmp_y, tmp_x)=='2')
+                continue;
+
+            //if find empty
+            snake.setd(key[i]);
+            next = SnakePiece(tmp_y, tmp_x);
+            tmp_next= new SnakePiece(next);
+            break;
+        }
+    }
 }

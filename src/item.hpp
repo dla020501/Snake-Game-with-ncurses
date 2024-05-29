@@ -9,6 +9,8 @@ namespace snake{
     public:
         Item(int y = 0, int x = 0);
 
+        int Apple_counter=0;
+        int Bomb_counter=0; // 미션 counter
         int getX();
 
         int getY();
@@ -24,31 +26,25 @@ namespace snake{
     class Apple : public Item
     {
     public:
-        Apple(int y = 0, int x = 0);
+        Apple(int y = 0, int x = 0);        
     };
 
     // Item 상속 받아서 icon만 'B'로 바꿈
     class Bomb : public Item
     {
     public:
-        Bomb(int y = 0, int x = 0);
+        Bomb(int y = 0, int x = 0);  
     };
 
-    // class Warp1 : public Item
-    // {
-    // public:
-    //     Warp1(int y = 0, int x = 0) : Item(y, x)
-    //     {
-    //         icon = '@';
-    //     }
-    // };
+    class Warp: public Item
+    {
+    public:
+        Warp(int y = 0, int x = 0);
+    };
 
-    // class Warp2 : public Item
-    // {
-    // public:
-    //     Warp2(int y = 0, int x = 0) : Item(y, x)
-    //     {
-    //         icon = '$';
-    //     }
-    // };
+    class Strawberry : public Item
+    {
+    public:
+        Strawberry(int y = 0, int x = 0);
+    };
 }

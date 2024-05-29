@@ -29,4 +29,14 @@ namespace snake{
     {
         icon = 'B';
     }
+
+    Warp::Warp(int y, int x) : Item(y, x)
+    {
+        icon = '$';
+    }
+
+    Strawberry::Strawberry(int y, int x) : Item(y, x)
+    {
+        icon = 'S';
+    }
 }

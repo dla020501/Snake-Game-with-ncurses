@@ -3,6 +3,10 @@
 #include "snake.hpp"
 #include "board.hpp"
 #include "item.hpp"
+//#include "new_warp.hpp"
+#include "missionboard.hpp"
+#include <stdlib.h>
+#include <time.h>
 
 namespace snake{
 class SnakeGame
@@ -23,6 +27,8 @@ public:
     // 폭탄 만드는 함수
     void createBomb();
 
+    void createStrawberry();
+
     // 입력 받은 값에 따라 작동을 달리하는 로직
     void getInputState();
 
@@ -30,13 +36,15 @@ public:
     void playingState();
 
     // 뱀이 다음 위치로 어떻게 나아가야하는지 icon에 따라 조종하는 함수
-    void handleNext(SnakePiece next);
+    void handleNext(SnakePiece& next);
 
     // 사과를 없애는(=먹는) 함수
     void eatApple();
 
     // 폭탄를 없애는(=먹는) 함수
     void eatBomb();
+
+    void eatStrawberry();
 
     // stage 번호에 따라서 게임 창을 초기화하는 함수
     void setStage(int stageNum);
@@ -55,16 +63,36 @@ public:
     void ItemUpdate();
     // =============================================
 
+    void createWarp();
+    void endWarp();
+    void checkWarp(SnakePiece& next, Warp *warp);
+    // 아이템 카운터체크
+    int apple_counter=0; 
+    int bomb_counter=0; 
+    int warp_counter=0;
+
+    // 아이템 카운터 반환 함수
+    int get_apple_Counter()  { return apple_counter; }
+    int get_bomb_Counter()  { return bomb_counter; }
+    int get_warp_Counter()  { return warp_counter; }
+
 private:
+    SnakePiece *tmp_next;
     Board board;
     Snake snake;
-
+    MissionBoard missionboard;
     bool game_over = false;
 
     Apple *apple;
     Bomb *bomb;
-    // Warp1 *warp1;
-    // Warp2 *warp2;
+    //NewWarp newwarp;
+
+    Warp *warp1;
+    Warp *warp2;
+    // Apple 과 Bomb이 동적으로 할당하여서 아이템먹어도 횟수가 업데이트 되지않음
+    // 그래서 snake_game.hpp에 item 변수 생성
+    
+    Strawberry *strawberry;
 
 };
 }
