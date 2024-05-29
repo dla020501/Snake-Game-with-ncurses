@@ -58,8 +58,6 @@ private:
 
     Apple *apple;
     Bomb *bomb;
-    // Warp1 *warp1;
-    // Warp2 *warp2;
 
 };
 }
