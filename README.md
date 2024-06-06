@@ -1,1 +1,3 @@
-# Snake-Game-with-ncurses
+# snake
+Snake game implemented using c++ ncurses library
+
