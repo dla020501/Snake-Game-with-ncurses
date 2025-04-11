@@ -1,11 +1,10 @@
 #include <ncurses.h>
-#include "snake_game.hpp"
-#include "leaderboard.hpp"
 #include <chrono>
-#include <thread>
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include "snake_game.hpp"
+#include "leaderboard.hpp"
 
 using namespace snake;
 int main()
@@ -15,7 +14,7 @@ int main()
     std::cout << "please enter your name:";
     std::cin >> name;
 
-    name.erase(std::remove(name.begin(), name.end(), ','), name.end());
+    name.erase(std::remove(name.begin(), name.end(), LeaderBoard::delimiter), name.end());
 
     // ncurses 시작
     initscr();
